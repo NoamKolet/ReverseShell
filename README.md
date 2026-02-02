@@ -32,20 +32,41 @@ The tool identifies high-privilege processes and attempts to steal their token t
     3.  Opens the target process and duplicates its Primary Token (`DuplicateTokenEx`).
     4.  Spawns the reverse shell using `CreateProcessWithTokenW`.
 
+### 4. Custom I/O Pipe Handling
+Instead of using standard library calls, the shell interaction is managed via Windows Pipes.
+* Standard Input/Output/Error (STDIN/STDOUT/STDERR) are redirected through anonymous pipes.
+* A dedicated loop forwards data between the Winsock socket and the `cmd.exe` process pipes.
+
 ---
 
-## 🔧 Execution Flow (Diagram)
+## 🔧 Technical Deep Dive
 
-The following diagram illustrates the internal logic of the tool when executed on a target machine:
+### The Execution Flow
 
-```mermaid
-graph TD
-    A[Start Execution] --> B{Check Current User}
-    B -- Already SYSTEM --> F[Decrypt Config & Connect]
-    B -- Normal User --> C[Enable SeDebugPrivilege]
-    C --> D[Find 'winlogon.exe' PID]
-    D --> E[Duplicate Primary Token]
-    E --> G[Relaunch with SYSTEM Token]
-    G --> F
-    F --> H[Spawn cmd.exe via Pipes]
-    H --> I[Establish C2 Connection]
+Below is the logical flow of the payload execution:
+
+1.  **Initialization:** The payload starts and decrypts its configuration.
+2.  **Privilege Check:** It calls a custom `IsSystem()` function to check the current user context.
+    * *If `SYSTEM`:* Proceed directly to payload execution.
+    * *If `User`:* Initiate Escalation Routine.
+3.  **Escalation Routine:**
+    * The tool hunts for the PID of `winlogon.exe`.
+    * It acquires a handle with `TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY`.
+    * It relaunches itself (or the payload logic) using the stolen token.
+4.  **Connection:** Finally, it establishes a TCP connection to the C2 server and spawns `cmd.exe` (hidden window).
+
+### Code Snippet: Token Manipulation Logic
+*A snippet demonstrating the logic used for token duplication (Sanitized for display):*
+
+```c
+// Enabling necessary privileges for token manipulation
+EnablePrivilege(SE_DEBUG_NAME);
+EnablePrivilege(SE_IMPERSONATE_NAME);
+
+// ... Finding target process logic ...
+
+// Duplicating the token to create a Primary Token for new process creation
+if (OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY, &hToken)) {
+    DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hDup);
+    // hDup is now a valid SYSTEM token ready for CreateProcessWithTokenW
+}
