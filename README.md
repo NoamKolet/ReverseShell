@@ -35,9 +35,15 @@ The tool identifies high-privilege processes and attempts to steal their token t
 ### 4. Custom I/O Pipe Handling
 Instead of using standard library calls, the shell interaction is managed via Windows Pipes.
 * Standard Input/Output/Error (STDIN/STDOUT/STDERR) are redirected through anonymous pipes.
-* A dedicated loop forwards data between the Winsock socket and the `cmd.exe` process pipes.
+* A dedicated loop forwards data between the Winsock socket and the `powershell.exe` process pipes.
 
 ---
+## 🛠️ Configuration & Customization
+
+The payload is configured to spawn `powershell.exe` by default for advanced post-exploitation capabilities. However, this can be modified to `cmd.exe` in the source code (`main.cpp`) to reduce the forensic footprint on tighter environments.
+
+> **🛡️ OpSec Note:**
+> While `powershell.exe` offers greater utility, it triggers significantly more alerts (AMSI, Script Block Logging) than `cmd.exe`. For strict evasion scenarios, recompiling with `cmd.exe` is recommended.
 
 ## 🔧 Technical Deep Dive
 
@@ -53,7 +59,7 @@ Below is the logical flow of the payload execution:
     * The tool hunts for the PID of `winlogon.exe`.
     * It acquires a handle with `TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY`.
     * It relaunches itself (or the payload logic) using the stolen token.
-4.  **Connection:** Finally, it establishes a TCP connection to the C2 server and spawns `cmd.exe` (hidden window).
+4.  **Connection:** Finally, it establishes a TCP connection to the C2 server and spawns `powershell.exe` (hidden window).
 
 ### Execution Flow Diagram
 
@@ -68,7 +74,7 @@ graph TD
     D --> E[Duplicate Primary Token]
     E --> G[Relaunch with SYSTEM Token]
     G -.-> A
-    F --> H[Spawn cmd.exe via Pipes]
+    F --> H[Spawn powershell.exe via Pipes]
     H --> I[Establish C2 Connection]
 ```
 
