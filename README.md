@@ -64,12 +64,12 @@ graph TD
     A[Start Execution] --> B{Check Current User}
     B -- Already SYSTEM --> F[Decrypt Config & Connect]
     B -- Normal User --> C[Enable SeDebugPrivilege]
-    C --> D[Find 'winlogon.exe' PID]
+    C --> D[Find winlogon.exe PID]
     D --> E[Duplicate Primary Token]
     E --> G[Relaunch with SYSTEM Token]
     G -.-> A
     F --> H[Spawn cmd.exe via Pipes]
-    H --> I[Establish C2 Connection]```
+    H --> I[Establish C2 Connection]
 
 ### Code Snippet: Token Manipulation Logic
 *A snippet demonstrating the logic used for token duplication (Sanitized for display):*
