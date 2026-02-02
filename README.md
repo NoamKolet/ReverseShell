@@ -84,12 +84,15 @@ graph TD
 ```c
 // Enabling necessary privileges for token manipulation
 EnablePrivilege(SE_DEBUG_NAME);
+EnablePrivilege(SE_ASSIGNPRIMARYTOKEN_NAME);
+EnablePrivilege(SE_INCREASE_QUOTA_NAME);
 EnablePrivilege(SE_IMPERSONATE_NAME);
 
 // ... Finding target process logic ...
 
 // Duplicating the token to create a Primary Token for new process creation
-if (OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY, &hToken)) {
+if (OpenProcessToken(hProc, TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY, &hToken)) {
+    HANDLE hDup;
     DuplicateTokenEx(hToken, TOKEN_ALL_ACCESS, NULL, SecurityImpersonation, TokenPrimary, &hDup);
     // hDup is now a valid SYSTEM token ready for CreateProcessWithTokenW
 }
