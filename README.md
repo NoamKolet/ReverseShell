@@ -70,6 +70,7 @@ graph TD
     G -.-> A
     F --> H[Spawn cmd.exe via Pipes]
     H --> I[Establish C2 Connection]
+```
 
 ### Code Snippet: Token Manipulation Logic
 *A snippet demonstrating the logic used for token duplication (Sanitized for display):*
