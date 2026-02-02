@@ -55,6 +55,22 @@ Below is the logical flow of the payload execution:
     * It relaunches itself (or the payload logic) using the stolen token.
 4.  **Connection:** Finally, it establishes a TCP connection to the C2 server and spawns `cmd.exe` (hidden window).
 
+### Execution Flow Diagram
+
+The following diagram illustrates the internal logic of the tool when executed on a target machine:
+
+```mermaid
+graph TD
+    A[Start Execution] --> B{Check Current User}
+    B -- Already SYSTEM --> F[Decrypt Config & Connect]
+    B -- Normal User --> C[Enable SeDebugPrivilege]
+    C --> D[Find 'winlogon.exe' PID]
+    D --> E[Duplicate Primary Token]
+    E --> G[Relaunch with SYSTEM Token]
+    G --> F
+    F --> H[Spawn cmd.exe via Pipes]
+    H --> I[Establish C2 Connection]
+
 ### Code Snippet: Token Manipulation Logic
 *A snippet demonstrating the logic used for token duplication (Sanitized for display):*
 
