@@ -17,6 +17,7 @@ The primary goal of this research was to explore:
 To maintain operational security (OpSec), the code allows for two compilation modes defined by preprocessor directives:
 * **Generator Mode (`BUILD_MODE 0`):** A utility helper that encrypts configuration strings (IP/Port) locally.
 * **Attack Mode (`BUILD_MODE 1`):** The final payload that contains only the obfuscated strings and the execution logic.
+<img width="1020" height="391" alt="Mode0" src="https://github.com/user-attachments/assets/469e949a-1982-4ce9-898a-efe25be849d9" />
 
 ### 2. String Obfuscation (XOR)
 To evade static analysis and basic signature detection, all sensitive strings (C2 IP address and Port) are encrypted at rest.
@@ -31,6 +32,7 @@ The tool identifies high-privilege processes and attempts to steal their token t
     2.  Enumerates running processes via `CreateToolhelp32Snapshot`.
     3.  Opens the target process and duplicates its Primary Token (`DuplicateTokenEx`).
     4.  Spawns the reverse shell using `CreateProcessWithTokenW`.
+<img width="1365" height="536" alt="image" src="https://github.com/user-attachments/assets/34d767e1-8ff4-4338-8867-b34f80c757d3" />
 
 ### 4. Custom I/O Pipe Handling
 Instead of using standard library calls, the shell interaction is managed via Windows Pipes.
@@ -103,6 +105,7 @@ void xor_crypt_string(char* input, int len, char* output) {
 xor_crypt_string(ENCRYPTED_IP, (int)strlen(ENCRYPTED_IP), decrypted_ip);
 xor_crypt_string(ENCRYPTED_PORT, (int)strlen(ENCRYPTED_PORT), decrypted_port_str);
 ```
+
 
 ### Code Snippet: Token Manipulation Logic
 *A snippet demonstrating the logic used for token duplication (Sanitized for display):*
